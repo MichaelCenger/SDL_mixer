@@ -257,7 +257,7 @@
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\SDL\VisualC\SDL\SDL.vcxproj">
+    <ProjectReference Include="..\..\SDL\VisualC\SDL\SDL.vcxproj" Condition="'$(SkipSDL)' != 'true'">
       <Project>{81ce8daf-ebb2-4761-8e45-b71abcca8c68}</Project>
     </ProjectReference>
   </ItemGroup>
