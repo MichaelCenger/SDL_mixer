@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.16...4.0)
 
 if(NOT DEFINED CMAKE_BUILD_TYPE)
   set(cmake_build_type_undefined 1)
@@ -8,9 +8,9 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 # See docs/release_checklist.md
 set(MAJOR_VERSION 3)
-set(MINOR_VERSION 0)
+set(MINOR_VERSION 1)
 set(MICRO_VERSION 0)
-set(SDL_REQUIRED_VERSION 3.0.0)
+set(SDL_REQUIRED_VERSION 3.3.0)
 
 project(SDL3_mixer
     LANGUAGES C
@@ -47,11 +47,6 @@ if(SDLMIXER_ROOTPROJECT)
       set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "CMake build type" FORCE)
     endif()
   endif()
-endif()
-
-set(SDLMIXER_SAMPLES_DEFAULT ${SDLMIXER_ROOTPROJECT})
-if(ANDROID)
-    set(SDLMIXER_SAMPLES_DEFAULT OFF)
 endif()
 
 # option() honors normal variables.
@@ -120,93 +115,53 @@ if(SDLMIXER_STRICT)
   set(fatal_error "FATAL_ERROR")
 endif()
 
-option(SDLMIXER_SAMPLES "Build the SDL3_mixer sample program(s)" ${SDLMIXER_SAMPLES_DEFAULT})
-cmake_dependent_option(SDLMIXER_SAMPLES_INSTALL "Install the SDL3_mixer sample program(s)" OFF "SDLMIXER_SAMPLES;SDLMIXER_INSTALL" OFF)
+option(SDLMIXER_TESTS "Build unit tests?" OFF)
+option(SDLMIXER_TESTS_INSTALL "Install unit tests?" OFF)
 
-option(SDLMIXER_SNDFILE "Support loading sounds via libsndfile" OFF)
-option(SDLMIXER_SNDFILE_SHARED "Dynamically load libsndfile" "${SDLMIXER_DEPS_SHARED}")
+# These are implemented in SDL_mixer itself, not using a third-party library.
+option(SDLMIXER_AIFF "Enable AIFF audio" ON)
+option(SDLMIXER_WAVE "Enable WAVE audio" ON)
+option(SDLMIXER_VOC "Enable VOC audio" ON)
+option(SDLMIXER_AU "Enable AU audio" ON)
 
-option(SDLMIXER_FLAC "Enable FLAC music" ON)
-
-cmake_dependent_option(SDLMIXER_FLAC_LIBFLAC "Enable FLAC music using libFLAC" OFF SDLMIXER_FLAC OFF)
+# Decoders that use third-party dependencies, even if they are compiled in, vendored, etc.
+option(SDLMIXER_FLAC_LIBFLAC "Enable FLAC audio using libFLAC" ON)
 cmake_dependent_option(SDLMIXER_FLAC_LIBFLAC_SHARED "Dynamically load LIBFLAC" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_FLAC_LIBFLAC OFF)
 
-cmake_dependent_option(SDLMIXER_FLAC_DRFLAC "Enable FLAC music using drflac" ON SDLMIXER_FLAC OFF)
+option(SDLMIXER_FLAC_DRFLAC "Enable FLAC audio using drflac" ON)
 
-option(SDLMIXER_GME "Support loading GME music via game-music-emu" ON)
+option(SDLMIXER_GME "Support loading GME audio via game-music-emu" ON)
 option(SDLMIXER_GME_SHARED "Dynamically load libgme" "${SDLMIXER_DEPS_SHARED}")
 
-option(SDLMIXER_MOD "Support loading MOD music" ON)
-
-cmake_dependent_option(SDLMIXER_MOD_MODPLUG "Support loading MOD music via modplug" OFF SDLMIXER_MOD OFF)
-cmake_dependent_option(SDLMIXER_MOD_MODPLUG_SHARED "Dynamically load modplug" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_MOD_MODPLUG OFF)
-
-cmake_dependent_option(SDLMIXER_MOD_XMP "Support loading MOD music via libxmp" ON SDLMIXER_MOD OFF)
+option(SDLMIXER_MOD_XMP "Support loading MOD audio via libxmp" ON)
 cmake_dependent_option(SDLMIXER_MOD_XMP_LITE "Use libxmp-lite instead of libxmp" OFF "SDLMIXER_MOD_XMP;NOT SDLMIXER_VENDORED" OFF)
 cmake_dependent_option(SDLMIXER_MOD_XMP_SHARED "Dynamically load libxmp(-lite)" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_MOD_XMP OFF)
 
-if(SDLMIXER_MOD AND NOT (SDLMIXER_MOD_MODPLUG OR SDLMIXER_MOD_XMP))
-    message(FATAL_ERROR "MOD support was enabled (SDLMIXER_MOD) but neither modplug (SDLMIXER_MOD_MODPLUG) or xmp (SDLMIXER_MOD_XMP) was enabled.")
-endif()
-
-option(SDLMIXER_MP3 "Enable MP3 music" ON)
-
-cmake_dependent_option(SDLMIXER_MP3_MINIMP3 "Support loading MP3 music via minimp3" ON SDLMIXER_MP3 OFF)
-
-cmake_dependent_option(SDLMIXER_MP3_MPG123 "Support loading MP3 music via MPG123" OFF SDLMIXER_MP3 OFF)
+option(SDLMIXER_MP3_DRMP3 "Support loading MP3 audio via dr_mp3" ON)
+option(SDLMIXER_MP3_MPG123 "Support loading MP3 audio via libmpg123" ON)
 cmake_dependent_option(SDLMIXER_MP3_MPG123_SHARED "Dynamically load mpg123" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_MP3_MPG123 OFF)
 
-if(SDLMIXER_MP3 AND NOT (SDLMIXER_MP3_MINIMP3 OR SDLMIXER_MP3_MPG123))
-    message(FATAL_ERROR "MP3 support was enabled (SDLMIXER_MP3) but neither minimp3 (SDLMIXER_MP3_MINIMP3) or mpg123 (SDLMIXER_MP3_MPG123) were enabled.")
-endif()
-
-option(SDLMIXER_MIDI "Enable MIDI music" ON)
-
-cmake_dependent_option(SDLMIXER_MIDI_FLUIDSYNTH "Support FluidSynth MIDI output" ON "SDLMIXER_MIDI;NOT SDLMIXER_VENDORED" OFF)
+cmake_dependent_option(SDLMIXER_MIDI_FLUIDSYNTH "Support FluidSynth MIDI output" ON "NOT SDLMIXER_VENDORED" OFF)
 cmake_dependent_option(SDLMIXER_MIDI_FLUIDSYNTH_SHARED "Dynamically load libfluidsynth" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_MIDI_FLUIDSYNTH OFF)
 
-if(WIN32 OR APPLE OR HAIKU)
-    cmake_dependent_option(SDLMIXER_MIDI_NATIVE "Support native MIDI output" ON SDLMIXER_MIDI OFF)
-else()
-    set(SDLMIXER_MIDI_NATIVE OFF)
-endif()
+option(SDLMIXER_MIDI_TIMIDITY "Support timidity MIDI output" ON)
 
-cmake_dependent_option(SDLMIXER_MIDI_TIMIDITY "Support timidity MIDI output" ON SDLMIXER_MIDI OFF)
-
-if(SDLMIXER_MIDI AND NOT (SDLMIXER_MIDI_TIMIDITY OR SDLMIXER_MIDI_NATIVE OR SDLMIXER_MIDI_FLUIDSYNTH))
-    message(FATAL_ERROR "MIDI support was enabled (SDLMIXER_MIDI) but neither FluidSynth (SDLMIXER_MIDI_FLUIDSYNTH), native (SDLMIXER_MIDI_NATIVE) or timidity (SDLMIXER_MIDI_TIMIDITY) was enabled")
-endif()
-
-option(SDLMIXER_OPUS "Enable Opus music" ON)
+option(SDLMIXER_OPUS "Enable Opus audio via libopus" ON)
 cmake_dependent_option(SDLMIXER_OPUS_SHARED "Dynamically load libopus" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_OPUS OFF)
 
-set(sdl3mixer_vorbis_strings STB TREMOR VORBISFILE)
-set(SDLMIXER_VORBIS "STB" CACHE STRING "Enable OGG Vorbis music")
-set_property(CACHE SDLMIXER_VORBIS PROPERTY STRINGS "${sdl3mixer_vorbis_strings}")
-if(SDLMIXER_VORBIS)
-    if(NOT SDLMIXER_VORBIS IN_LIST sdl3mixer_vorbis_strings)
-        message(FATAL_ERROR "SDLMIXER_VORBIS contains an invalid value (=${SDLMIXER_VORBIS}). It must be one of ${sdl3mixer_vorbis_strings}.")
-    endif()
+option(SDLMIXER_VORBIS_STB "Enable Ogg Vorbis audio via stb_vorbis" ON)
+option(SDLMIXER_VORBIS_VORBISFILE "Enable Ogg Vorbis audio via libvorbisfile" ON)
+option(SDLMIXER_VORBIS_TREMOR "Enable Ogg Vorbis audio via libvorbisidec ('tremor')" OFF)
+
+if (SDLMIXER_VORBIS_VORBISFILE AND SDLMIXER_VORBIS_TREMOR)
+    message(FATAL_ERROR "Both SDLMIXER_VORBIS_VORBISFILE and SDLMIXER_VORBIS_TREMOR are both enabled, but only one can be used")
 endif()
-set(SDLMIXER_VORBIS_STB OFF)
-set(SDLMIXER_VORBIS_TREMOR OFF)
-set(SDLMIXER_VORBIS_VORBISFILE OFF)
-if(SDLMIXER_VORBIS STREQUAL "STB")
-    set(SDLMIXER_VORBIS_STB ON)
-endif()
-if(SDLMIXER_VORBIS STREQUAL "TREMOR")
-    set(SDLMIXER_VORBIS_TREMOR ON)
-endif()
-if(SDLMIXER_VORBIS STREQUAL "VORBISFILE")
-    set(SDLMIXER_VORBIS_VORBISFILE ON)
-endif()
-cmake_dependent_option(SDLMIXER_VORBIS_TREMOR_SHARED "Dynamically load tremor library" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_VORBIS_TREMOR OFF)
+
 cmake_dependent_option(SDLMIXER_VORBIS_VORBISFILE_SHARED "Dynamically load vorbisfile library" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_VORBIS_VORBISFILE OFF)
+cmake_dependent_option(SDLMIXER_VORBIS_TREMOR_SHARED "Dynamically load vorbisidec ('tremor') library" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_VORBIS_TREMOR OFF)
 
-option(SDLMIXER_WAVE "Enable streaming WAVE music" ON)
-
-option(SDLMIXER_WAVPACK "Enable WavPack music" ON)
-cmake_dependent_option(SDLMIXER_WAVPACK_DSD "Enable WavPack DSD music support" OFF SDLMIXER_WAVPACK OFF)
+option(SDLMIXER_WAVPACK "Enable WavPack audio" ON)
+cmake_dependent_option(SDLMIXER_WAVPACK_DSD "Enable WavPack DSD audio support" OFF SDLMIXER_WAVPACK OFF)
 cmake_dependent_option(SDLMIXER_WAVPACK_SHARED "Dynamically load WavPack library" "${SDLMIXER_DEPS_SHARED}" SDLMIXER_WAVPACK OFF)
 
 if(SDLMIXER_VORBIS_TREMOR OR SDLMIXER_VORBIS_VORBISFILE OR SDLMIXER_FLAC_LIBFLAC OR SDLMIXER_OPUS)
@@ -249,35 +204,36 @@ SDL_DetectCMakePlatform()
 
 set(BUILD_SHARED_LIBS ${SDLMIXER_BUILD_SHARED_LIBS})
 add_library(${sdl3_mixer_target_name}
-    src/codecs/load_aiff.c
-    src/codecs/load_voc.c
-    src/codecs/load_sndfile.c
-    src/codecs/mp3utils.c
-    src/codecs/music_drflac.c
-    src/codecs/music_flac.c
-    src/codecs/music_fluidsynth.c
-    src/codecs/music_gme.c
-    src/codecs/music_minimp3.c
-    src/codecs/music_modplug.c
-    src/codecs/music_mpg123.c
-    src/codecs/music_nativemidi.c
-    src/codecs/music_ogg.c
-    src/codecs/music_ogg_stb.c
-    src/codecs/music_opus.c
-    src/codecs/music_timidity.c
-    src/codecs/music_wav.c
-    src/codecs/music_wavpack.c
-    src/codecs/music_xmp.c
-    src/effect_position.c
-    src/effect_stereoreverse.c
-    src/effects_internal.c
-    src/mixer.c
-    src/music.c
-    src/utils.c
+    src/SDL_mixer.c
+    src/SDL_mixer_metadata_tags.c
+    src/SDL_mixer_spatialization.c
+    src/decoder_aiff.c
+    src/decoder_au.c
+    src/decoder_drflac.c
+    src/decoder_drmp3.c
+    src/decoder_flac.c
+    src/decoder_fluidsynth.c
+    src/decoder_gme.c
+    src/decoder_mpg123.c
+    src/decoder_opus.c
+    src/decoder_raw.c
+    src/decoder_sinewave.c
+    src/decoder_stb_vorbis.c
+    src/decoder_timidity.c
+    src/decoder_voc.c
+    src/decoder_vorbis.c
+    src/decoder_wav.c
+    src/decoder_wavpack.c
+    src/decoder_xmp.c
 )
 add_library(SDL3_mixer::${sdl3_mixer_target_name} ALIAS ${sdl3_mixer_target_name})
 if(NOT TARGET SDL3_mixer::SDL3_mixer)
     add_library(SDL3_mixer::SDL3_mixer ALIAS ${sdl3_mixer_target_name})
+endif()
+if("c_std_99" IN_LIST CMAKE_C_COMPILE_FEATURES)
+    target_compile_features(${sdl3_mixer_target_name} PRIVATE c_std_99)
+else()
+    message(WARNING "target_compile_features does not know c_std_99 for C compiler")
 endif()
 target_include_directories(${sdl3_mixer_target_name}
     PUBLIC
@@ -293,6 +249,8 @@ target_compile_definitions(${sdl3_mixer_target_name} PRIVATE
     SDL_BUILD_MINOR_VERSION=${MINOR_VERSION}
     SDL_BUILD_MICRO_VERSION=${MICRO_VERSION}
 )
+# Make sure SDL3's include directory comes first
+target_include_directories(${sdl3_mixer_target_name} PRIVATE $<TARGET_PROPERTY:SDL3::Headers,INTERFACE_INCLUDE_DIRECTORIES>)
 target_link_libraries(${sdl3_mixer_target_name} PUBLIC SDL3::Headers)
 if(SDLMIXER_BUILD_SHARED_LIBS)
     target_link_libraries(${sdl3_mixer_target_name} PRIVATE SDL3::SDL3-shared)
@@ -321,7 +279,7 @@ if(NOT ANDROID)
         VERSION "${SO_VERSION}"
     )
     if(APPLE)
-        cmake_minimum_required(VERSION 3.17)
+        cmake_minimum_required(VERSION 3.17...3.28)
         set_target_properties(${sdl3_mixer_target_name} PROPERTIES
             MACHO_COMPATIBILITY_VERSION "${DYLIB_COMPAT_VERSION}"
             MACHO_CURRENT_VERSION "${DYLIB_CURRENT_VERSION}"
@@ -363,53 +321,15 @@ set(PC_LIBS)
 set(PC_REQUIRES)
 set(SDLMIXER_BACKENDS)
 
-list(APPEND SDLMIXER_BACKENDS SNDFILE)
-set(SDLMIXER_SNDFILE_ENABLED FALSE)
-if(SDLMIXER_SNDFILE)
-    if(SDLMIXER_VENDORED)
-        message(STATUS "Using vendored libsndfile")
-        message(${fatal_error} "libsndfile is not vendored.")
-    else()
-        find_package(SndFile ${required})
-        if(SndFile_FOUND)
-            set(SDLMIXER_SNDFILE_ENABLED TRUE)
-            message(STATUS "Using system libsndfile")
-            if(NOT SDLMIXER_SNDFILE_SHARED)
-                list(APPEND PC_REQUIRES sndfile)
-            endif()
-        else()
-            message(${fatal_error} "libsndfile NOT found")
-        endif()
-    endif()
-    if(SDLMIXER_SNDFILE_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE LOAD_SNDFILE)
-        if(SDLMIXER_SNDFILE_SHARED)
-            target_include_directories(${sdl3_mixer_target_name} PRIVATE
-                $<TARGET_PROPERTY:SndFile::sndfile,INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:SndFile::sndfile,INTERFACE_INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:SndFile::sndfile,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
-            )
-            target_get_dynamic_library(dynamic_sndfile SndFile::sndfile)
-            message(STATUS "Dynamic libsndfile: ${dynamic_sndfile}")
-            target_compile_definitions(${sdl3_mixer_target_name} PRIVATE "SNDFILE_DYNAMIC=\"${dynamic_sndfile}\"")
-            if(SDLMIXER_VENDORED)
-                add_dependencies(${sdl3_mixer_target_name} SndFile::sndfile)
-            endif()
-        else()
-            target_link_libraries(${sdl3_mixer_target_name} PRIVATE SndFile::sndfile)
-        endif()
-    endif()
-endif()
-
 if(SDLMIXER_OGG)
-    # libogg is a requirement of libflac, libtremor and libvorbisfile, so only need this library when vendoring
+    # libogg is a requirement of libflac, libvorbisidec and libvorbisfile, so only need this library when vendoring
     if(SDLMIXER_VENDORED)
         message(STATUS "Using vendored libogg")
         set(BUILD_SHARED_LIBS ${SDLMIXER_OGG_SHARED})
         set(INSTALL_CMAKE_PACKAGE_MODULE FALSE)
         set(BUILD_TESTING OFF)
         sdl_check_project_in_subfolder(external/ogg ogg SDLMIXER_VENDORED)
-        add_subdirectory(external/ogg EXCLUDE_FROM_ALL)
+        add_subdirectory(external/ogg external/ogg-build EXCLUDE_FROM_ALL)
         if(SDLMIXER_OGG_install)
             list(APPEND INSTALL_EXTRA_TARGETS ogg)
         endif()
@@ -429,7 +349,7 @@ if(SDLMIXER_OPUS)
         set(BUILD_SHARED_LIBS ${SDLMIXER_OPUS_SHARED})
         set(BUILD_PROGRAMS OFF)
         sdl_check_project_in_subfolder(external/opus opus SDLMIXER_VENDORED)
-        add_subdirectory(external/opus EXCLUDE_FROM_ALL)
+        add_subdirectory(external/opus external/opus-build EXCLUDE_FROM_ALL)
 
         set(OP_DISABLE_DOCS TRUE)
         set(OP_DISABLE_EXAMPLES TRUE)
@@ -437,7 +357,7 @@ if(SDLMIXER_OPUS)
         message(STATUS "Using vendored opusfile")
         set(BUILD_SHARED_LIBS ${SDLMIXER_OPUS_SHARED})
         sdl_check_project_in_subfolder(external/opusfile opusfile SDLMIXER_VENDORED)
-        add_subdirectory(external/opusfile EXCLUDE_FROM_ALL)
+        add_subdirectory(external/opusfile external/opusfile-build EXCLUDE_FROM_ALL)
         if(MSVC)
             set_property(TARGET opusfile PROPERTY WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
         endif()
@@ -471,7 +391,7 @@ if(SDLMIXER_OPUS)
         endif()
     endif()
     if(SDLMIXER_OPUS_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_OPUS)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_OPUS)
         if(SDLMIXER_OPUS_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:OpusFile::opusfile,INCLUDE_DIRECTORIES>
@@ -494,9 +414,7 @@ list(APPEND SDLMIXER_BACKENDS VORBIS_STB)
 set(SDLMIXER_VORBIS_STB_ENABLED FALSE)
 if(SDLMIXER_VORBIS_STB)
     set(SDLMIXER_VORBIS_STB_ENABLED TRUE)
-    message(STATUS "Enabled ogg music: using stb_vorbis")
-    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_OGG)
-    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE OGG_USE_STB)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_OGGVORBIS_STB)
 endif()
 
 list(APPEND SDLMIXER_BACKENDS VORBIS_TREMOR)
@@ -511,7 +429,7 @@ if(SDLMIXER_VORBIS_TREMOR)
         message(STATUS "Using vendored tremor")
         set(BUILD_SHARED_LIBS ${SDLMIXER_VORBIS_TREMOR_SHARED})
         sdl_check_project_in_subfolder(external/tremor tremor SDLMIXER_VENDORED)
-        add_subdirectory(external/tremor EXCLUDE_FROM_ALL)
+        add_subdirectory(external/tremor external/tremor-build EXCLUDE_FROM_ALL)
         if(NOT TARGET tremor::tremor)
             add_library(tremor::tremor ALIAS vorbisidec)
         endif()
@@ -533,7 +451,7 @@ if(SDLMIXER_VORBIS_TREMOR)
         find_package(tremor ${required})
         if(tremor_FOUND)
             if(NOT SDLMIXER_VORBIS_TREMOR_SHARED)
-                list(APPEND PC_REQUIRES tremor)
+                list(APPEND PC_REQUIRES vorbisidec)
             endif()
             set(SDLMIXER_VORBIS_TREMOR_ENABLED TRUE)
         else()
@@ -541,7 +459,7 @@ if(SDLMIXER_VORBIS_TREMOR)
         endif()
     endif()
     if(SDLMIXER_VORBIS_TREMOR_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_OGG OGG_USE_TREMOR)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_OGGVORBIS_VORBISFILE VORBIS_USE_TREMOR)
         if(SDLMIXER_VORBIS_TREMOR_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:tremor::tremor,INCLUDE_DIRECTORIES>
@@ -550,7 +468,7 @@ if(SDLMIXER_VORBIS_TREMOR)
             )
             target_get_dynamic_library(dynamic_tremor tremor::tremor)
             message(STATUS "Dynamic vorbis (tremor): ${dynamic_tremor}")
-            target_compile_definitions(${sdl3_mixer_target_name} PRIVATE "OGG_DYNAMIC=\"${dynamic_tremor}\"")
+            target_compile_definitions(${sdl3_mixer_target_name} PRIVATE "VORBIS_DYNAMIC=\"${dynamic_tremor}\"")
             if(SDLMIXER_VENDORED)
                 add_dependencies(${sdl3_mixer_target_name} tremor::tremor)
             endif()
@@ -572,7 +490,7 @@ if(SDLMIXER_VORBIS_VORBISFILE)
         message(STATUS "Using vendored vorbis + vorbisfile")
         set(BUILD_SHARED_LIBS ${SDLMIXER_VORBIS_VORBISFILE_SHARED})
         sdl_check_project_in_subfolder(external/vorbis vorbisfile SDLMIXER_VENDORED)
-        add_subdirectory(external/vorbis EXCLUDE_FROM_ALL)
+        add_subdirectory(external/vorbis external/vorbis-build EXCLUDE_FROM_ALL)
         if(NOT TARGET Vorbis::vorbisfile)
             add_library(Vorbis::vorbisfile ALIAS vorbisfile)
         endif()
@@ -595,7 +513,7 @@ if(SDLMIXER_VORBIS_VORBISFILE)
         endif()
     endif()
     if(SDLMIXER_VORBIS_VORBISFILE_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_OGG)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_OGGVORBIS_VORBISFILE)
         if(SDLMIXER_VORBIS_VORBISFILE_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:Vorbis::vorbisfile,INCLUDE_DIRECTORIES>
@@ -604,7 +522,7 @@ if(SDLMIXER_VORBIS_VORBISFILE)
             )
             target_get_dynamic_library(dynamic_vorbisfile Vorbis::vorbisfile)
             message(STATUS "Dynamic vorbisfile: ${dynamic_vorbisfile}")
-            target_compile_definitions(${sdl3_mixer_target_name} PRIVATE "OGG_DYNAMIC=\"${dynamic_vorbisfile}\"")
+            target_compile_definitions(${sdl3_mixer_target_name} PRIVATE "VORBIS_DYNAMIC=\"${dynamic_vorbisfile}\"")
             if(SDLMIXER_VENDORED)
                 add_dependencies(${sdl3_mixer_target_name} Vorbis::vorbisfile)
             endif()
@@ -638,7 +556,7 @@ if(SDLMIXER_FLAC_LIBFLAC)
         set(INSTALL_MANPAGES OFF)
         message(STATUS "Using vendored libflac")
         sdl_check_project_in_subfolder(external/flac libflac SDLMIXER_VENDORED)
-        add_subdirectory(external/flac EXCLUDE_FROM_ALL)
+        add_subdirectory(external/flac external/flac-build EXCLUDE_FROM_ALL)
         if(SDLMIXER_FLAC_LIBFLAC_SHARED OR NOT SDLMIXER_BUILD_SHARED_LIBS)
             list(APPEND INSTALL_EXTRA_TARGETS FLAC)
         endif()
@@ -653,12 +571,18 @@ if(SDLMIXER_FLAC_LIBFLAC)
             if(NOT SDLMIXER_FLAC_LIBFLAC_SHARED)
                 list(APPEND PC_REQUIRES flac)
             endif()
+            # Xiph's CMake script does not handle Threads::Threads correctly:
+            # https://github.com/xiph/flac/issues/820
+            get_property(flac_interface_link_libraries TARGET FLAC::FLAC PROPERTY INTERFACE_LINK_LIBRARIES)
+            if(Threads::Threads IN_LIST flac_interface_link_libraries)
+                find_package(Threads)
+            endif()
         else()
             message(${fatal_error} "libflac NOT found")
         endif()
     endif()
     if(SDLMIXER_FLAC_LIBFLAC_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_FLAC_LIBFLAC)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_FLAC_LIBFLAC)
         if(SDLMIXER_FLAC_LIBFLAC_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:FLAC::FLAC,INCLUDE_DIRECTORIES>
@@ -681,7 +605,7 @@ list(APPEND SDLMIXER_BACKENDS FLAC_DRFLAC)
 set(SDLMIXER_FLAC_DRFLAC_ENABLED FALSE)
 if(SDLMIXER_FLAC_DRFLAC)
     set(SDLMIXER_FLAC_DRFLAC_ENABLED TRUE)
-    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_FLAC_DRFLAC)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_FLAC_DRFLAC)
 endif()
 
 set(SDLMIXER_FLAC_ENABLED FALSE)
@@ -694,17 +618,25 @@ set(SDLMIXER_GME_ENABLED FALSE)
 if(SDLMIXER_GME)
     if(SDLMIXER_VENDORED)
         set(SDLMIXER_GME_ENABLED TRUE)
-        set(BUILD_SHARED_LIBS "${SDLMIXER_GME_SHARED}")
-        set(ENABLE_UBSAN OFF)
-        set(BUILD_FRAMEWORK OFF)
+        set(GME_BUILD_SHARED "${SDLMIXER_GME_SHARED}")
+        if(SDLMIXER_GME_SHARED)
+            set(GME_BUILD_STATIC OFF)
+            set(targets_gme gme_shared)
+        else()
+            set(GME_BUILD_STATIC ON)
+            set(targets_gme gme_static gme_deps)
+        endif()
+        set(GME_BUILD_FRAMEWORK OFF)
+        set(GME_BUILD_TESTING OFF)
+        set(GME_BUILD_EXAMPLES OFF)
+        set(GME_ENABLE_UBSAN OFF)
         option(GME_ZLIB "Enable GME to support compressed sound formats" OFF)
         message(STATUS "Using vendored libgme")
         sdl_check_project_in_subfolder(external/libgme libgme SDLMIXER_VENDORED)
         enable_language(CXX)
-        add_subdirectory(external/libgme EXCLUDE_FROM_ALL)
-        add_library(gme::gme ALIAS gme)
+        add_subdirectory(external/libgme external/libgme-build EXCLUDE_FROM_ALL)
         if(SDLMIXER_GME_SHARED OR NOT SDLMIXER_BUILD_SHARED_LIBS)
-            list(APPEND INSTALL_EXTRA_TARGETS gme)
+            list(APPEND INSTALL_EXTRA_TARGETS ${targets_gme})
         endif()
         if(NOT SDLMIXER_GME_SHARED)
             list(APPEND PC_LIBS -l$<TARGET_FILE_BASE_NAME:gme>)
@@ -722,7 +654,7 @@ if(SDLMIXER_GME)
         endif()
     endif()
     if(SDLMIXER_GME_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_GME)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_GME)
         if(SDLMIXER_GME_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:gme::gme,INCLUDE_DIRECTORIES>
@@ -737,44 +669,6 @@ if(SDLMIXER_GME)
             endif()
         else()
             target_link_libraries(${sdl3_mixer_target_name} PRIVATE gme::gme)
-        endif()
-    endif()
-endif()
-
-list(APPEND SDLMIXER_BACKENDS MOD_MODPLUG)
-set(SDLMIXER_MOD_MODPLUG_ENABLED FALSE)
-if(SDLMIXER_MOD_MODPLUG)
-    if(SDLMIXER_VENDORED)
-        message(STATUS "Using vendored libmodplug")
-        message(${fatal_error} "libmodplug is not vendored.")
-    else()
-        find_package(modplug ${required})
-        if(modplug_FOUND)
-            set(SDLMIXER_MOD_MODPLUG_ENABLED TRUE)
-            message(STATUS "Using system libmodplug")
-            if(NOT SDLMIXER_MOD_MODPLUG_SHARED)
-                list(APPEND PC_REQUIRES libmodplug)
-            endif()
-        else()
-            message(${fatal_error} "libmodplug NOT found")
-        endif()
-    endif()
-    if(SDLMIXER_MOD_MODPLUG_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MOD_MODPLUG)
-        if(SDLMIXER_MOD_MODPLUG_SHARED)
-            target_include_directories(${sdl3_mixer_target_name} PRIVATE
-                $<TARGET_PROPERTY:modplug::modplug,INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:modplug::modplug,INTERFACE_INCLUDE_DIRECTORIES>
-                $<TARGET_PROPERTY:modplug::modplug,INTERFACE_SYSTEM_INCLUDE_DIRECTORIES>
-            )
-            target_get_dynamic_library(dynamic_modplug modplug::modplug)
-            message(STATUS "Dynamic modplug: ${dynamic_modplug}")
-            target_compile_definitions(${sdl3_mixer_target_name} PRIVATE "MODPLUG_DYNAMIC=\"${dynamic_modplug}\"")
-            if(SDLMIXER_VENDORED)
-                add_dependencies(${sdl3_mixer_target_name} modplug::modplug)
-            endif()
-        else()
-            target_link_libraries(${sdl3_mixer_target_name} PRIVATE modplug::modplug)
         endif()
     endif()
 endif()
@@ -798,7 +692,7 @@ if(SDLMIXER_MOD_XMP)
             set(tgt_xmp xmp_static)
         endif()
         set(xmp_name libxmp)
-        add_subdirectory(external/libxmp EXCLUDE_FROM_ALL)
+        add_subdirectory(external/libxmp external/libxmp-build EXCLUDE_FROM_ALL)
         if(SDLMIXER_MOD_XMP_SHARED OR NOT SDLMIXER_BUILD_SHARED_LIBS)
             list(APPEND INSTALL_EXTRA_TARGETS ${tgt_xmp})
         endif()
@@ -841,7 +735,7 @@ if(SDLMIXER_MOD_XMP)
         endif()
     endif()
     if(SDLMIXER_MOD_XMP_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MOD_XMP)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_MOD_XMP)
         if(SDLMIXER_MOD_XMP_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:${tgt_xmp},INCLUDE_DIRECTORIES>
@@ -861,15 +755,15 @@ if(SDLMIXER_MOD_XMP)
 endif()
 
 set(SDLMIXER_MOD_ENABLED FALSE)
-if(SDLMIXER_MOD_MODPLUG_ENABLED OR SDLMIXER_MOD_XMP_ENABLED OR SDLMIXER_MOD_XMP_ENABLED)
+if(SDLMIXER_MOD_XMP_ENABLED)
     set(SDLMIXER_MOD_ENABLED TRUE)
 endif()
 
-list(APPEND SDLMIXER_BACKENDS MP3_MINIMP3)
-set(SDLMIXER_MP3_MINIMP3_ENABLED FALSE)
-if(SDLMIXER_MP3_MINIMP3)
-    set(SDLMIXER_MP3_MINIMP3_ENABLED TRUE)
-    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MP3_MINIMP3)
+list(APPEND SDLMIXER_BACKENDS MP3_DRMP3)
+set(SDLMIXER_MP3_DRMP3_ENABLED FALSE)
+if(SDLMIXER_MP3_DRMP3)
+    set(SDLMIXER_MP3_DRMP3_ENABLED TRUE)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_MP3_DRMP3)
 endif()
 
 list(APPEND SDLMIXER_BACKENDS MP3_MPG123)
@@ -882,7 +776,7 @@ if(SDLMIXER_MP3_MPG123)
         set(BUILD_LIBOUT123 FALSE)
         set(BUILD_PROGRAMS OFF)
         set(BUILD_SHARED_LIBS "${SDLMIXER_MP3_MPG123_SHARED}")
-        add_subdirectory(external/mpg123/ports/cmake EXCLUDE_FROM_ALL)
+        add_subdirectory(external/mpg123/ports/cmake external/libmpg123-build/ports/cmake EXCLUDE_FROM_ALL)
         if(NOT TARGET MPG123::libmpg123)
             add_library(MPG123::libmpg123 ALIAS libmpg123)
         endif()
@@ -905,7 +799,7 @@ if(SDLMIXER_MP3_MPG123)
         endif()
     endif()
     if(SDLMIXER_MP3_MPG123_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MP3_MPG123)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_MP3_MPG123)
         if(SDLMIXER_MP3_MPG123_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:MPG123::libmpg123,INCLUDE_DIRECTORIES>
@@ -925,7 +819,7 @@ if(SDLMIXER_MP3_MPG123)
 endif()
 
 set(SDLMIXER_MP3_ENABLED FALSE)
-if(SDLMIXER_MP3_MINIMP3_ENABLED OR SDLMIXER_MP3_MPG123_ENABLED)
+if(SDLMIXER_MP3_DRMP3_ENABLED OR SDLMIXER_MP3_MPG123_ENABLED)
     set(SDLMIXER_MP3_ENABLED TRUE)
 endif()
 
@@ -937,7 +831,7 @@ if(SDLMIXER_MIDI_FLUIDSYNTH)
         message(${fatal_error} "FluidSynth is not vendored.")
         set(SDLMIXER_MIDI_FLUIDSYNTH_ENABLED FALSE)
     else()
-        find_package(FluidSynth ${required})
+        find_package(FluidSynth "2.2.0" ${required})
         if(FluidSynth_FOUND)
             set(SDLMIXER_MIDI_FLUIDSYNTH_ENABLED TRUE)
             message(STATUS "Using system FluidSynth")
@@ -949,7 +843,7 @@ if(SDLMIXER_MIDI_FLUIDSYNTH)
         endif()
     endif()
     if(SDLMIXER_MIDI_FLUIDSYNTH_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MID_FLUIDSYNTH)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_MIDI_FLUIDSYNTH)
         if(SDLMIXER_MIDI_FLUIDSYNTH_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
                 $<TARGET_PROPERTY:FluidSynth::libfluidsynth,INCLUDE_DIRECTORIES>
@@ -968,62 +862,50 @@ if(SDLMIXER_MIDI_FLUIDSYNTH)
     endif()
 endif()
 
-list(APPEND SDLMIXER_BACKENDS MIDI_NATIVE)
-list(APPEND SDLMIXER_MIDI_NATIVE_ENABLED FALSE)
-if(SDLMIXER_MIDI_NATIVE)
-    set(midi_common_sources
-        src/codecs/native_midi/native_midi_common.c
-        src/codecs/native_midi/native_midi_common.h
-    )
-    if(WIN32)
-        list(APPEND SDLMIXER_MIDI_NATIVE_ENABLED TRUE)
-        target_sources(${sdl3_mixer_target_name} PRIVATE src/codecs/native_midi/native_midi_win32.c ${midi_common_sources})
-        target_link_libraries(${sdl3_mixer_target_name} PRIVATE winmm)
-    elseif(APPLE)
-        list(APPEND SDLMIXER_MIDI_NATIVE_ENABLED TRUE)
-        target_sources(${sdl3_mixer_target_name} PRIVATE src/codecs/native_midi/native_midi_macosx.c ${midi_common_sources})
-        target_link_libraries(${sdl3_mixer_target_name} PRIVATE -Wl,-framework,AudioToolbox -Wl,-framework,AudioUnit -Wl,-framework,CoreServices)
-    elseif(HAIKU)
-        list(APPEND SDLMIXER_MIDI_NATIVE_ENABLED TRUE)
-        enable_language(CXX)
-        target_sources(${sdl3_mixer_target_name} PRIVATE src/codecs/native_midi/native_midi_haiku.cpp ${midi_common_sources})
-        target_link_libraries(${sdl3_mixer_target_name} PRIVATE midi)
-    endif()
-    if(SDLMIXER_MIDI_NATIVE_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MID_NATIVE)
-    else()
-        message(${fatal_error} "native mididi NOT available for current platform")
-    endif()
-endif()
-
 list(APPEND SDLMIXER_BACKENDS MIDI_TIMIDITY)
 set(SDLMIXER_MIDI_TIMIDITY_ENABLED FALSE)
 if(SDLMIXER_MIDI_TIMIDITY)
     set(SDLMIXER_MIDI_TIMIDITY_ENABLED TRUE)
-    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_MID_TIMIDITY)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_MIDI_TIMIDITY)
     target_sources(${sdl3_mixer_target_name} PRIVATE
-        src/codecs/timidity/common.c
-        src/codecs/timidity/instrum.c
-        src/codecs/timidity/mix.c
-        src/codecs/timidity/output.c
-        src/codecs/timidity/playmidi.c
-        src/codecs/timidity/readmidi.c
-        src/codecs/timidity/resample.c
-        src/codecs/timidity/tables.c
-        src/codecs/timidity/timidity.c
+        src/timidity/common.c
+        src/timidity/instrum.c
+        src/timidity/mix.c
+        src/timidity/output.c
+        src/timidity/playmidi.c
+        src/timidity/readmidi.c
+        src/timidity/resample.c
+        src/timidity/tables.c
+        src/timidity/timidity.c
     )
-endif()
-
-set(SDLMIXER_MIDI_ENABLED FALSE)
-if(SDLMIXER_MIDI_FLUIDSYNTH_ENABLED OR SDLMIXER_MIDI_NATIVE_ENABLED OR SDLMIXER_MIDI_TIMIDITY_ENABLED)
-    set(SDLMIXER_MIDI_ENABLED TRUE)
 endif()
 
 list(APPEND SDLMIXER_BACKENDS WAVE)
 set(SDLMIXER_WAVE_ENABLED FALSE)
 if(SDLMIXER_WAVE)
     set(SDLMIXER_WAVE_ENABLED TRUE)
-    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_WAV)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_WAV)
+endif()
+
+list(APPEND SDLMIXER_BACKENDS AIFF)
+set(SDLMIXER_AIFF_ENABLED FALSE)
+if(SDLMIXER_AIFF)
+    set(SDLMIXER_AIFF_ENABLED TRUE)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_AIFF)
+endif()
+
+list(APPEND SDLMIXER_BACKENDS VOC)
+set(SDLMIXER_VOC_ENABLED FALSE)
+if(SDLMIXER_VOC)
+    set(SDLMIXER_VOC_ENABLED TRUE)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_VOC)
+endif()
+
+list(APPEND SDLMIXER_BACKENDS AU)
+set(SDLMIXER_AU_ENABLED FALSE)
+if(SDLMIXER_AU)
+    set(SDLMIXER_AU_ENABLED TRUE)
+    target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_AU)
 endif()
 
 list(APPEND SDLMIXER_BACKENDS WAVPACK)
@@ -1039,7 +921,7 @@ if(SDLMIXER_WAVPACK)
         set(WAVPACK_BUILD_WINAMP_PLUGIN OFF)
         set(WAVPACK_BUILD_DOCS OFF)
         set(BUILD_SHARED_LIBS "${SDLMIXER_WAVPACK_SHARED}")
-        add_subdirectory(external/wavpack EXCLUDE_FROM_ALL)
+        add_subdirectory(external/wavpack external/wavpack-build EXCLUDE_FROM_ALL)
         if(SDLMIXER_WAVPACK_SHARED OR NOT SDLMIXER_BUILD_SHARED_LIBS)
             list(APPEND INSTALL_EXTRA_TARGETS wavpack)
         endif()
@@ -1060,9 +942,9 @@ if(SDLMIXER_WAVPACK)
         endif()
     endif()
     if(SDLMIXER_WAVPACK_ENABLED)
-        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_WAVPACK)
+        target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_WAVPACK)
         if(SDLMIXER_WAVPACK_DSD)
-          target_compile_definitions(${sdl3_mixer_target_name} PRIVATE MUSIC_WAVPACK_DSD)
+          target_compile_definitions(${sdl3_mixer_target_name} PRIVATE DECODER_WAVPACK_DSD)
         endif()
         if(SDLMIXER_WAVPACK_SHARED)
             target_include_directories(${sdl3_mixer_target_name} PRIVATE
@@ -1158,7 +1040,6 @@ if(SDLMIXER_INSTALL)
                 cmake/Findgme.cmake
                 cmake/Findlibxmp.cmake
                 cmake/Findlibxmp-lite.cmake
-                cmake/Findmodplug.cmake
                 cmake/FindOgg.cmake
                 cmake/FindOpus.cmake
                 cmake/FindOpusFile.cmake
@@ -1166,7 +1047,6 @@ if(SDLMIXER_INSTALL)
                 cmake/FindVorbis.cmake
                 cmake/Findtremor.cmake
                 cmake/Findwavpack.cmake
-                cmake/FindSndFile.cmake
             DESTINATION "${SDLMIXER_INSTALL_CMAKEDIR}"
             COMPONENT devel
         )
@@ -1178,12 +1058,25 @@ if(SDLMIXER_INSTALL)
         COMPONENT devel
     )
 
+    export(TARGETS ${sdl3_mixer_target_name} ${INSTALL_EXTRA_TARGETS} NAMESPACE "SDL3_mixer::" FILE "${sdl3_mixer_target_name}-targets.cmake")
+
     if(SDLMIXER_RELOCATABLE)
       file(RELATIVE_PATH SDL_PATH_PREFIX_RELATIVE_TO_PKGCONFIG "${CMAKE_INSTALL_PREFIX}/${SDLMIXER_PKGCONFIG_INSTALLDIR}" "${CMAKE_INSTALL_PREFIX}")
       string(REGEX REPLACE "[/]+$" "" SDL_PATH_PREFIX_RELATIVE_TO_PKGCONFIG "${SDL_PATH_PREFIX_RELATIVE_TO_PKGCONFIG}")
       set(SDL_PKGCONFIG_PREFIX "\${pcfiledir}/${SDL_PATH_PREFIX_RELATIVE_TO_PKGCONFIG}")
     else()
       set(SDL_PKGCONFIG_PREFIX "${CMAKE_INSTALL_PREFIX}")
+    endif()
+
+    if(IS_ABSOLUTE "${CMAKE_INSTALL_INCLUDEDIR}")
+      set(INCLUDEDIR_FOR_PKG_CONFIG "${CMAKE_INSTALL_INCLUDEDIR}")
+    else()
+      set(INCLUDEDIR_FOR_PKG_CONFIG "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
+    endif()
+    if(IS_ABSOLUTE "${CMAKE_INSTALL_LIBDIR}")
+      set(LIBDIR_FOR_PKG_CONFIG "${CMAKE_INSTALL_LIBDIR}")
+    else()
+      set(LIBDIR_FOR_PKG_CONFIG "\${prefix}/${CMAKE_INSTALL_LIBDIR}")
     endif()
 
     string(JOIN " " PC_REQUIRES ${PC_REQUIRES})
@@ -1224,33 +1117,8 @@ if(SDLMIXER_INSTALL)
     endif()
 endif()
 
-if(SDLMIXER_SAMPLES)
-    find_package(SDL3 REQUIRED COMPONENTS SDL3_test)
-
-    check_include_file("signal.h" HAVE_SIGNAL_H)
-    check_symbol_exists("setbuf" "stdio.h" HAVE_SETBUF)
-
-    add_executable(playmus examples/playmus.c)
-    add_executable(playwave examples/playwave.c)
-
-    foreach(prog playmus playwave)
-        sdl_add_warning_options(${prog} WARNING_AS_ERROR ${SDLMIXER_WERROR})
-        target_link_libraries(${prog} PRIVATE SDL3::SDL3_test)
-        target_link_libraries(${prog} PRIVATE SDL3_mixer::${sdl3_mixer_target_name})
-        target_link_libraries(${prog} PRIVATE ${sdl3_target_name})
-        if(HAVE_SIGNAL_H)
-            target_compile_definitions(${prog} PRIVATE HAVE_SIGNAL_H)
-        endif()
-        if(HAVE_SETBUF)
-            target_compile_definitions(${prog} PRIVATE HAVE_SETBUF)
-        endif()
-
-        if(SDLMIXER_SAMPLES_INSTALL)
-            install(TARGETS ${prog}
-                RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-            )
-        endif()
-    endforeach()
+if(SDLMIXER_TESTS)
+  add_subdirectory(test)
 endif()
 
 set(available_deps)
